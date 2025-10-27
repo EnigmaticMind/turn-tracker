@@ -1,0 +1,46 @@
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.player-grid {
+  display: grid;
+  grid-template-rows: repeat(2, auto);
+  grid-auto-flow: column;
+}
+
+.player-grid-wrapper {
+  position: relative;
+}
+
+.player-grid-wrapper::before,
+.player-grid-wrapper::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-style: solid;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+}
+
+.player-grid-wrapper::before {
+  left: 0;
+  border-width: 15px 15px 15px 0;
+  border-color: transparent rgba(59, 130, 246, 0.5) transparent transparent;
+}
+
+.player-grid-wrapper::after {
+  right: 0;
+  border-width: 15px 0 15px 15px;
+  border-color: transparent transparent transparent rgba(59, 130, 246, 0.5);
+}
+
