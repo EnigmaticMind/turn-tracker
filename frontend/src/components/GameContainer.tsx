@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Outlet, useParams } from "react-router";
 import { useNavigate } from "react-router";
 
@@ -11,6 +11,8 @@ export default function GameContainer() {
   const navigate = useNavigate();
 
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
+
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
   // Handle home button
   const onHome = () => {
@@ -33,9 +35,48 @@ export default function GameContainer() {
     setIsOptionsOpen(false);
   };
 
+  // Request wake lock to prevent screen sleep
+  useEffect(() => {
+    console.log("Requesting wake lock");
+    const requestWakeLock = async () => {
+      if ("wakeLock" in navigator) {
+        try {
+          const wakeLock = await navigator.wakeLock.request("screen");
+          wakeLockRef.current = wakeLock;
+        } catch (err) {
+          console.error("Failed to acquire wake lock:", err);
+        }
+      }
+    };
+
+    requestWakeLock();
+
+    const handleVisibilityChange = () => {
+      if (
+        document.visibilityState === "visible" &&
+        wakeLockRef.current === null
+      ) {
+        requestWakeLock();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Release wake lock when component unmounts
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch((err) => {
+          console.error("Failed to release wake lock:", err);
+        });
+      }
+    };
+  }, []);
+
   return (
-    <div className="h-screen flex flex-col">
-      <div className="flex-1 pt-4 pb-[60px]">
+    <div className="h-screen overflow-hidden">
+      <div className="h-[calc(100vh-52px)] overflow-hidden pt-6">
         <Outlet />
       </div>
 
@@ -53,7 +94,7 @@ export default function GameContainer() {
         </div>
         {/* Game Code */}
         <div
-          className="text-white font-semibold tracking-widest text-lg select-nonee"
+          className="text-white font-semibold tracking-widest text-lg select-none cursor-pointer"
           onClick={onGameCode}
         >
           {gameID}

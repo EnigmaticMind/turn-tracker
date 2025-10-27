@@ -26,25 +26,26 @@ export function PlayerGrid({
 }: PlayerGridProps) {
   const needsScrolling = shouldScroll ?? players.length > rows * cols;
 
+  if (players.length === 0) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <span className="text-sm text-slate-400">Waiting for players...</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full px-4">
+    <div
+      className={`w-full h-full ${needsScrolling ? "player-grid-wrapper" : ""}`}
+    >
       <div
-        className={`relative ${needsScrolling ? "player-grid-wrapper" : ""}`}
+        className={`w-full h-full ${needsScrolling ? "overflow-y-auto scrollbar-hide" : ""}`}
       >
         <div
-          className={`player-grid gap-6 ${
-            needsScrolling
-              ? "justify-start overflow-x-auto scrollbar-hide"
-              : "justify-items-center"
-          }`}
+          className={`player-grid justify-items-center items-center `}
           style={{
-            ...(needsScrolling
-              ? { gridTemplateRows: `repeat(${rows}, auto)` }
-              : {
-                  gridAutoFlow: "row",
-                  gridTemplateColumns: `repeat(${cols}, 1fr)`,
-                }),
-            minHeight: `${rows * (small ? 120 : 120)}px`,
+            gridTemplateColumns: `repeat(${cols}, 1fr)`,
+            gridAutoRows: "auto",
           }}
         >
           {players.map((p) => (

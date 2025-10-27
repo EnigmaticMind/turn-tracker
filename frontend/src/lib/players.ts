@@ -49,4 +49,36 @@ export const players = [
     name: "Casey",
     color: "#1abc9c",
   },
-].slice(0, 10);
+  {
+    id: 11,
+    name: "Sam",
+    color: "#2ecc71",
+  },
+  {
+    id: 12,
+    name: "Jamie",
+    color: "#e67e22",
+  },
+  {
+    id: 13,
+    name: "Riley",
+    color: "#9b59b6",
+  },
+  {
+    id: 14,
+    name: "Quinn",
+    color: "#1abc9c",
+  },
+  {
+    id: 15,
+    name: "Dakota",
+    color: "#34495e",
+  },
+  {
+    id: 16,
+    name: "Sage",
+    color: "#e74c3c",
+  },
+].splice(0, 6);
+
+

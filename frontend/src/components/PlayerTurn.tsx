@@ -30,9 +30,9 @@ export default function PlayerTurn() {
   }
 
   return (
-    <div className="flex flex-col h-full items-center justify-center text-center space-y-6">
+    <div className="max-h-full h-full flex flex-col overflow-hidden">
       <div
-        className="w-full h-1/2 flex flex-col items-center justify-center cursor-pointer"
+        className="w-full flex flex-col items-center justify-center cursor-pointer shrink-0"
         onClick={handleEndCurrentTurn}
       >
         <h2 className="text-2xl font-semibold text-slate-200">Current Turn</h2>
@@ -44,18 +44,23 @@ export default function PlayerTurn() {
         />
       </div>
 
-      <div className="w-full px-4">
-        <span className="text-sm text-slate-400">
+      <div className="w-full flex-1 px-4 justify-center text-center overflow-hidden flex flex-col min-h-0">
+        <span
+          className="text-sm text-slate-400 shrink-0 pb-2"
+          style={{ visibility: otherPlayers.length > 0 ? "visible" : "hidden" }}
+        >
           Tap below to start the next player's turn
         </span>
-        <PlayerGrid
-          players={otherPlayers}
-          onSelect={handleSelect}
-          rows={2}
-          cols={3}
-          small={true}
-          shouldScroll={otherPlayers.length > 6}
-        />
+        <div className="flex-1 min-h-0">
+          <PlayerGrid
+            players={otherPlayers}
+            onSelect={handleSelect}
+            rows={2}
+            cols={3}
+            small={true}
+            shouldScroll={otherPlayers.length > 6}
+          />
+        </div>
       </div>
     </div>
   );

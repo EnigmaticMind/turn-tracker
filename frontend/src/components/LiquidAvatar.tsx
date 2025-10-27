@@ -16,7 +16,7 @@ export function LiquidAvatar({
 }: Props) {
   const [id] = useState(() => Math.random().toString(36).substring(2, 9));
 
-  const size = small ? 100 : active ? 330 : 120;
+  const size = small ? 110 : active ? 330 : 140;
 
   // Calculate text size based on avatar size
   const textSize = active ? "text-4xl" : small ? "text-md" : "text-md";
