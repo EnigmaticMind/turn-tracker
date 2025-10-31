@@ -11,4 +11,7 @@ export default [
 
   // Options routes
   route("options", "components/OptionsPage.tsx"),
+
+  // Dev-only routes
+  route("dev/toasts", "components/ToastExamples.tsx"),
 ] satisfies RouteConfig;

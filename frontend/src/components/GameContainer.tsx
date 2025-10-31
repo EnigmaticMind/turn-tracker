@@ -1,12 +1,56 @@
 import { useState, useEffect, useRef } from "react";
-import { Outlet, useParams } from "react-router";
+import { Outlet, useParams, redirect, data, useLoaderData } from "react-router";
 import { useNavigate } from "react-router";
 
 import { Home, Settings } from "lucide-react";
 import Options from "./Options";
+import PeerManager from "../lib/PeerManager";
+
+// React Router Loader
+export async function clientLoader({
+  params,
+}: {
+  params: { gameID?: string };
+}) {
+  const pm = new PeerManager();
+
+  const gameIDExists = !!(params.gameID && params.gameID.trim().length > 0);
+  console.log("gameIDExists", gameIDExists, params.gameID);
+  // Game ID does not exist, create a new game
+  if (!gameIDExists) {
+    console.log("Creating new game");
+    try {
+      await pm.createGame();
+    } catch (error) {
+      // Problem making a new game, redirect to home
+      console.error("Error creating game:", error);
+      // TODO: Handle errors better
+      throw redirect("/");
+    }
+  }
+
+  // Game ID exists, join the game
+  if (gameIDExists) {
+    console.log("Joining game", params.gameID);
+    try {
+      await pm.joinGame(params.gameID!);
+    } catch (error) {
+      console.error("Error joining game:", error);
+      // TODO: Handle errors better
+      throw redirect("/");
+    }
+  }
+
+  return new Promise(async (resolve) => {
+    resolve(pm);
+  });
+}
 
 export default function GameContainer() {
-  const { gameID } = useParams();
+  // Type pm as any to workaround TypeScript error due to missing type
+  const pm = useLoaderData() as PeerManager;
+
+  const gameID = pm?.gameID;
 
   const navigate = useNavigate();
 
@@ -23,7 +67,7 @@ export default function GameContainer() {
   // Handle game code button
   const onGameCode = () => {
     // TODO: Copy to clipboard
-    navigate(`/game/${gameID}`);
+    pm.broadcast({ type: "game_code", gameID: gameID });
   };
 
   // Handle settings button
@@ -34,6 +78,16 @@ export default function GameContainer() {
   const closeOptions = () => {
     setIsOptionsOpen(false);
   };
+
+  // Make sure the URL matches the game ID
+  useEffect(() => {
+    console.log("Game ID", gameID, location.pathname);
+    if (gameID && location.pathname !== `/game/${gameID}`) {
+      if (location.pathname !== `/game/${gameID}`) {
+        window.history.replaceState(null, "", `/game/${gameID}`);
+      }
+    }
+  }, [gameID, navigate, location.pathname]);
 
   // Request wake lock to prevent screen sleep
   useEffect(() => {

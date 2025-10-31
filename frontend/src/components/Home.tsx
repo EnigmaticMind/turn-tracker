@@ -22,8 +22,8 @@ export default function Home() {
         {/* Interactive Buttons */}
         <div className="space-y-6">
           {/* Start New Game - Interactive Button */}
-          <NavLink to="/game/abc123" end>
-            <button className="relative bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all">
+          <NavLink to="/game/" end>
+            <button className="relative bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700/50 hover:to-cyan-700/50 transition-all">
               <div className="relative flex items-center space-x-2">
                 <span>Start New Game</span>
               </div>
