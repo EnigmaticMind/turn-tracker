@@ -17,7 +17,6 @@
     "framer-motion": "^12.23.24",
     "isbot": "^5.1.27",
     "lucide-react": "^0.548.0",
-    "peerjs": "^1.5.5",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router": "^7.7.1"

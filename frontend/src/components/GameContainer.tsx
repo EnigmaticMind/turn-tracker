@@ -4,7 +4,10 @@ import { useNavigate } from "react-router";
 
 import { Home, Settings } from "lucide-react";
 import Options from "./Options";
-import PeerManager from "../lib/PeerManager";
+import WebSocketManager from "../lib/websocket/WebSocketManager";
+import { createGame } from "../lib/websocket/handlers/createGame";
+import { joinGame } from "../lib/websocket/handlers/joinGame";
+import { broadcast } from "../lib/websocket/handlers/broadcast";
 
 // React Router Loader
 export async function clientLoader({
@@ -12,7 +15,7 @@ export async function clientLoader({
 }: {
   params: { gameID?: string };
 }) {
-  const pm = new PeerManager();
+  const ws = new WebSocketManager();
 
   const gameIDExists = !!(params.gameID && params.gameID.trim().length > 0);
   console.log("gameIDExists", gameIDExists, params.gameID);
@@ -20,11 +23,12 @@ export async function clientLoader({
   if (!gameIDExists) {
     console.log("Creating new game");
     try {
-      await pm.createGame();
+      await createGame(ws);
     } catch (error) {
       // Problem making a new game, redirect to home
       console.error("Error creating game:", error);
       // TODO: Handle errors better
+      ws.destroy();
       throw redirect("/");
     }
   }
@@ -33,24 +37,24 @@ export async function clientLoader({
   if (gameIDExists) {
     console.log("Joining game", params.gameID);
     try {
-      await pm.joinGame(params.gameID!);
+      await joinGame(ws, params.gameID!);
     } catch (error) {
       console.error("Error joining game:", error);
       // TODO: Handle errors better
+      ws.destroy();
       throw redirect("/");
     }
   }
 
   return new Promise(async (resolve) => {
-    resolve(pm);
+    resolve(ws);
   });
 }
 
 export default function GameContainer() {
-  // Type pm as any to workaround TypeScript error due to missing type
-  const pm = useLoaderData() as PeerManager;
+  const ws = useLoaderData() as WebSocketManager;
 
-  const gameID = pm?.gameID;
+  const gameID = ws?.gameID;
 
   const navigate = useNavigate();
 
@@ -67,7 +71,9 @@ export default function GameContainer() {
   // Handle game code button
   const onGameCode = () => {
     // TODO: Copy to clipboard
-    pm.broadcast({ type: "game_code", gameID: gameID });
+    broadcast(ws, { type: "game_code", gameID: gameID }).catch((err) => {
+      console.error("Broadcast failed:", err);
+    });
   };
 
   // Handle settings button
@@ -174,7 +180,7 @@ export default function GameContainer() {
             className="bg-[#0D111A] border border-gray-700 rounded-lg p-8 max-w-md w-full mx-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <Options onClose={closeOptions} />
+            <Options onClose={closeOptions} ws={ws} />
           </div>
         </div>
       )}

@@ -1,15 +1,50 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import {
+  saveDefaultProfile,
+  getDefaultProfile,
+} from "../lib/utils/userProfile";
+import { updateProfile } from "../lib/websocket/handlers/updateProfile";
+import WebSocketManager from "../lib/websocket/WebSocketManager";
 
 interface OptionsProps {
   onClose: () => void;
+  ws?: WebSocketManager; // Optional - only needed when in a game to update server
 }
 
-export default function Options({ onClose }: OptionsProps) {
-  const [playerName, setPlayerName] = useState<string>();
-  const [playerColor, setPlayerColor] = useState<string>();
+export default function Options({ onClose, ws }: OptionsProps) {
+  const [playerName, setPlayerName] = useState<string>("");
+  const [playerColor, setPlayerColor] = useState<string>("#3498db");
 
-  const onSave = () => {
-    // TODO: Save changes to local storage
+  // Load defaults from localStorage on mount
+  useEffect(() => {
+    const defaults = getDefaultProfile();
+    if (defaults.displayName) {
+      setPlayerName(defaults.displayName);
+    }
+    if (defaults.color) {
+      setPlayerColor(defaults.color);
+    }
+  }, []);
+
+  const onSave = async () => {
+    // Save to localStorage
+    saveDefaultProfile(playerName || undefined, playerColor || undefined);
+
+    // Update profile on server (only if ws is provided and in a room)
+    if (ws) {
+      try {
+        if (ws.gameID) {
+          await updateProfile(
+            ws,
+            playerName || undefined,
+            playerColor || undefined
+          );
+        }
+      } catch (error) {
+        console.error("Failed to update profile:", error);
+      }
+    }
+
     onClose();
   };
 
