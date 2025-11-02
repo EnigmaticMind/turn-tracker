@@ -267,13 +267,16 @@ func TestRateLimit(t *testing.T) {
 			}
 
 			// Now at limit, next call triggers slow path which cleans up expired messages
+			// After cleanup, we have MessageRateLimit/2 messages (the recent batch)
 			// Should be able to send more after cleanup
 			if !client.CheckRateLimit() {
 				t.Error("Expected message to be allowed after slow path cleanup of expired messages")
 			}
 
-			// Should now be able to send up to limit-1 more
-			for i := 0; i < MessageRateLimit-2; i++ {
+			// After cleanup and adding one more, we now have MessageRateLimit/2 + 1 messages
+			// Should be able to send (MessageRateLimit - (MessageRateLimit/2 + 1)) more messages
+			remaining := MessageRateLimit - (MessageRateLimit/2 + 1)
+			for i := 0; i < remaining; i++ {
 				if !client.CheckRateLimit() {
 					t.Errorf("Expected message %d to be allowed after cleanup", i+2)
 				}

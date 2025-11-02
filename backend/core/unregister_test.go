@@ -281,9 +281,11 @@ func TestUnregister(t *testing.T) {
 
 		hub.handleUnregister(client)
 
-		// Room is now empty, so callbacks should NOT be called
-		if turnEndedCalled {
-			t.Error("Expected OnTurnEnded NOT to be called when room becomes empty")
+		// Room is now empty, but OnTurnEnded SHOULD be called if client had turn
+		// (This ensures turn_changed message is sent even when room becomes empty)
+		// OnPlayerLeft should NOT be called when room becomes empty
+		if !turnEndedCalled {
+			t.Error("Expected OnTurnEnded to be called when client with turn leaves (even if room becomes empty)")
 		}
 		if playerLeftCalled {
 			t.Error("Expected OnPlayerLeft NOT to be called when room becomes empty")

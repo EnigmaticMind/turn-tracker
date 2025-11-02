@@ -196,9 +196,8 @@ func TestHub(t *testing.T) {
 			hub := NewHub()
 			testRoom := NewRoom("TEST123")
 
-			hub.mu.Lock()
+			// AddRoom handles its own locking, don't lock here
 			hub.AddRoom("TEST123", testRoom)
-			hub.mu.Unlock()
 
 			if hub.GetRoom("TEST123") != testRoom {
 				t.Error("Expected AddRoom to add room to hub")

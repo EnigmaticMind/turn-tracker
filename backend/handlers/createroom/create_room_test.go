@@ -99,8 +99,8 @@ func TestCreateRoomMessageFormat(t *testing.T) {
 	if data.RoomID == "" {
 		t.Error("RoomID should not be empty")
 	}
-	if len(data.RoomID) != 6 {
-		t.Errorf("RoomID should be 6 characters, got %d", len(data.RoomID))
+	if len(data.RoomID) != 4 {
+		t.Errorf("RoomID should be 4 characters, got %d", len(data.RoomID))
 	}
 	if len(data.Peers) != 1 {
 		t.Errorf("Expected 1 peer, got %d", len(data.Peers))

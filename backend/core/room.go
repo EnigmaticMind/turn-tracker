@@ -64,11 +64,18 @@ func (r *Room) ListPeerIDs() []string {
 }
 
 // ListPeerInfo returns all peer information in the room
+// Creator is always returned last in the list for consistent ordering
 func (r *Room) ListPeerInfo() []PeerInfo {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
+	if len(r.Clients) == 0 {
+		return nil
+	}
+
 	peers := make([]PeerInfo, 0, len(r.Clients))
+	var creatorPeer PeerInfo
+
 	for _, client := range r.Clients {
 		peerInfo := PeerInfo{
 			ClientID:      client.ClientID,
@@ -77,7 +84,17 @@ func (r *Room) ListPeerInfo() []PeerInfo {
 			TotalTurnTime: client.TotalTurnTime,
 		}
 
-		peers = append(peers, peerInfo)
+		// If this is the creator, save it for last
+		if client.ClientID == r.CreatedBy {
+			creatorPeer = peerInfo
+		} else {
+			peers = append(peers, peerInfo)
+		}
+	}
+
+	// Add creator last
+	if creatorPeer.ClientID != "" {
+		peers = append(peers, creatorPeer)
 	}
 
 	return peers

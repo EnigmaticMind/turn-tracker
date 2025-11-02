@@ -1,9 +1,11 @@
 package test_helpers
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"time"
@@ -96,13 +98,26 @@ func ConnectTestClient(serverURL string) (*TestWebSocketClient, error) {
 	// Start reading messages
 	go func() {
 		for {
-			var msg types.Message
-			err := conn.ReadJSON(&msg)
+			_, messageBytes, err := conn.ReadMessage()
 			if err != nil {
 				client.ErrCh <- err
 				return
 			}
-			client.MsgCh <- msg
+
+			// Handle newline-separated messages (batched by WritePump)
+			parts := bytes.Split(messageBytes, []byte{'\n'})
+			for _, part := range parts {
+				if len(part) == 0 {
+					continue // Skip empty parts
+				}
+
+				var msg types.Message
+				if err := json.Unmarshal(part, &msg); err != nil {
+					log.Printf("Error unmarshaling test message: %v", err)
+					continue // Skip invalid messages
+				}
+				client.MsgCh <- msg
+			}
 		}
 	}()
 
@@ -143,5 +158,7 @@ func (c *TestWebSocketClient) Close() error {
 
 // Cleanup shuts down the test server
 func (ts *TestServer) Cleanup() {
+	ts.Hub.Shutdown() // Gracefully shutdown hub first
+	time.Sleep(50 * time.Millisecond) // Give goroutines time to exit
 	ts.Server.Close()
 }
