@@ -51,14 +51,15 @@ export default function BackendUnavailable() {
           Backend Unavailable
         </h1>
         <p className="text-slate-400 text-xl">
-          Unable to connect to the game server
+          Give the server a few seconds to start up...
         </p>
       </div>
 
       <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6 space-y-4 max-w-md">
         <p className="text-slate-300">
           The game server appears to be offline or unreachable. This page will
-          automatically check for the server every few seconds.
+          automatically check for the server every few seconds and will redirect
+          you to the home page when the server is available.
         </p>
         <button
           onClick={checkHealth}
