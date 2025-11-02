@@ -120,8 +120,7 @@ func main() {
 	// Start disconnected client cleanup goroutine
 	hub.StartDisconnectedCleanup()
 
-	// Health check endpoint
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	healthCheck := func(w http.ResponseWriter, r *http.Request) {
 		// Set CORS headers to allow cross-origin requests
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
@@ -137,7 +136,11 @@ func main() {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
-	})
+	}
+
+	// Health check endpoint
+	http.HandleFunc("/health", healthCheck)
+	http.HandleFunc("/", healthCheck)
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		serveWS(hub, w, r)
