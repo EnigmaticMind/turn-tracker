@@ -42,20 +42,28 @@ func HandleJoinRoom(hub *core.Hub, client *core.Client, roomID, displayName, col
 			log.Printf("Client %s had invalid RoomID %s (room not found), clearing it", client.ClientID, oldRoomID)
 			client.RoomID = ""
 		}
-	}
 
-	// Re-validate room still exists after potential leave operation
-	room = hub.GetRoom(roomID)
-	if room == nil {
-		errorMsg, _ := types.NewErrorMessage("Room has been deleted")
-		client.SafeSend(errorMsg)
-		return
+		// Re-validate room still exists after potential leave operation
+		room = hub.GetRoom(roomID)
+		if room == nil {
+			errorMsg, _ := types.NewErrorMessage("Room has been deleted")
+			client.SafeSend(errorMsg)
+			return
+		}
 	}
 
 	// Add client to room first (so they're included in peers list)
 	if !room.AddClient(client) {
-		errorMsg, _ := types.NewErrorMessage("Already in this room")
-		client.SafeSend(errorMsg)
+		// Ensure client.RoomID is set (may be inconsistent)
+		client.RoomID = roomID
+		// If we're receiving a request to join but they are already in	the room
+		// Send back join information to client but don't rebuild our state
+		response := createRoomJoinedMessage(room, client)
+		if response == nil {
+			return
+		}
+		client.SafeSend(response)
+		log.Printf("Client %s (%s) re-synced room %s state (fallback)", client.ClientID, client.DisplayName, roomID)
 		return
 	}
 
@@ -63,16 +71,8 @@ func HandleJoinRoom(hub *core.Hub, client *core.Client, roomID, displayName, col
 	client.RoomID = roomID
 
 	// Now get peers list (includes the joining client)
-	peers := room.ListPeerInfo()
-	currentTurn := room.GetCurrentTurnInfo()
-	response, err := NewRoomJoinedMessage(roomID, client.ClientID, peers, currentTurn)
-	if err != nil {
-		log.Printf("Error creating room_joined message: %v", err)
-		// Rollback: remove client from room
-		room.RemoveClient(client.ClientID)
-		client.RoomID = ""
-		errorMsg, _ := types.NewErrorMessage("Failed to create join message")
-		client.SafeSend(errorMsg)
+	response := createRoomJoinedMessage(room, client)
+	if response == nil {
 		return
 	}
 
@@ -91,4 +91,19 @@ func HandleJoinRoom(hub *core.Hub, client *core.Client, roomID, displayName, col
 	client.SafeSend(response)
 	hub.BroadcastToRoomExcept(roomID, client, playerJoinedMsg)
 	log.Printf("Client %s (%s) joined room %s", client.ClientID, client.DisplayName, roomID)
+}
+
+// createRoomJoinedMessage creates a room_joined message
+func createRoomJoinedMessage(room *core.Room, client *core.Client) []byte {
+	peers := room.ListPeerInfo()
+	currentTurn := room.GetCurrentTurnInfo()
+	response, err := NewRoomJoinedMessage(room.ID, client.ClientID, peers, currentTurn)
+	if err != nil {
+		log.Printf("Error creating room_joined message: %v", err)
+		errorMsg, _ := types.NewErrorMessage("Failed to create join message")
+		client.SafeSend(errorMsg)
+		return nil
+	}
+
+	return response
 }

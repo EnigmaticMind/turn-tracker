@@ -53,6 +53,7 @@ func TestJoinRoom(t *testing.T) {
 	t.Run("JoinRoomWithProfile", testJoinRoomWithProfile)
 	t.Run("JoinRoomWithoutProfile", testJoinRoomWithoutProfile)
 	t.Run("JoinRoomAlreadyInRoom", testJoinRoomAlreadyInRoom)
+	t.Run("JoinRoomAlreadyInRoomWithMultipleClients", testJoinRoomAlreadyInRoomWithMultipleClients)
 	t.Run("JoinDifferentRoomFromAnother", testJoinDifferentRoomFromAnother)
 	t.Run("JoinRoomReceivesPeersList", testJoinRoomReceivesPeersList)
 	t.Run("JoinRoomNotifiesOthers", testJoinRoomNotifiesOthers)
@@ -325,11 +326,11 @@ func testJoinRoomAlreadyInRoom(t *testing.T) {
 	// Create room
 	client.SendMessage("create_room", map[string]interface{}{})
 	createResp, _ := client.ReceiveMessage(5 * time.Second)
-	var createData createroom.RoomCreatedData // Fixed
+	var createData createroom.RoomCreatedData
 	json.Unmarshal(createResp.Data, &createData)
 	roomID := createData.RoomID
 
-	// Try to join the same room again
+	// Try to join the same room again - should receive room_joined, not error
 	client.SendMessage("join_room", map[string]interface{}{
 		"room_id": roomID,
 	})
@@ -339,15 +340,87 @@ func testJoinRoomAlreadyInRoom(t *testing.T) {
 		t.Fatalf("Failed to receive: %v", err)
 	}
 
-	if resp.Type != "error" {
-		t.Errorf("Expected 'error', got '%s'", resp.Type)
+	// Should receive room_joined message (not error)
+	if resp.Type != "room_joined" {
+		t.Errorf("Expected 'room_joined', got '%s'", resp.Type)
 	}
 
-	var errorData types.ErrorData
-	json.Unmarshal(resp.Data, &errorData)
+	var joinData RoomJoinedData
+	json.Unmarshal(resp.Data, &joinData)
 
-	if errorData.Message != "Already in this room" {
-		t.Errorf("Expected 'Already in this room', got '%s'", errorData.Message)
+	if joinData.RoomID != roomID {
+		t.Errorf("Expected RoomID '%s', got '%s'", roomID, joinData.RoomID)
+	}
+
+	if joinData.YourClientID == "" {
+		t.Error("Expected YourClientID to be set")
+	}
+
+	// Should still have the same peers (should be 1 - the creator)
+	if len(joinData.Peers) != 1 {
+		t.Errorf("Expected 1 peer, got %d", len(joinData.Peers))
+	}
+
+	// Verify no player_joined notification is sent (no other clients to notify)
+	// But we can verify by checking that the room still only has 1 client
+	room := server.Hub.GetRoom(roomID)
+	if room == nil {
+		t.Fatal("Room should still exist")
+	}
+
+	peers := room.ListPeerInfo()
+	if len(peers) != 1 {
+		t.Errorf("Expected room to still have 1 peer (no duplicate), got %d", len(peers))
+	}
+}
+
+func testJoinRoomAlreadyInRoomWithMultipleClients(t *testing.T) {
+	server := test_helpers.SetupTestServer(setupTestMessageRouter())
+	defer server.Cleanup()
+
+	// Client 1 creates room
+	client1, _ := test_helpers.ConnectTestClient(server.Server.URL)
+	defer client1.Close()
+	time.Sleep(100 * time.Millisecond)
+
+	client1.SendMessage("create_room", map[string]interface{}{})
+	createResp, _ := client1.ReceiveMessage(5 * time.Second)
+	var createData createroom.RoomCreatedData
+	json.Unmarshal(createResp.Data, &createData)
+	roomID := createData.RoomID
+
+	// Client 2 joins
+	client2, _ := test_helpers.ConnectTestClient(server.Server.URL)
+	defer client2.Close()
+	time.Sleep(100 * time.Millisecond)
+
+	client2.SendMessage("join_room", map[string]interface{}{
+		"room_id": roomID,
+	})
+	client2.ReceiveMessage(5 * time.Second) // Wait for room_joined
+	client1.ReceiveMessage(5 * time.Second) // Wait for player_joined
+
+	// Client 2 tries to join again - should get room_joined
+	client2.SendMessage("join_room", map[string]interface{}{
+		"room_id": roomID,
+	})
+
+	resp, err := client2.ReceiveMessage(5 * time.Second)
+	if err != nil {
+		t.Fatalf("Failed to receive: %v", err)
+	}
+
+	if resp.Type != "room_joined" {
+		t.Errorf("Expected 'room_joined', got '%s'", resp.Type)
+	}
+
+	// Client 1 should NOT receive another player_joined notification
+	// (this is the key behavior we're testing)
+	select {
+	case msg := <-client1.MsgCh:
+		t.Errorf("Client 1 should not receive any message, but received: %s", msg.Type)
+	case <-time.After(500 * time.Millisecond):
+		// Expected - no message received
 	}
 }
 
