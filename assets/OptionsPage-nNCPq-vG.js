@@ -1,0 +1,1 @@
+import{q as t,z as s,p as n}from"./chunk-UIGDSWPH-CtiJzZl8.js";import{O as a}from"./Options-DIhddWk5.js";import"./ToastProvider-DOBgYgXK.js";const m=t(function(){const o=s();return n.jsx(a,{onClose:()=>o("/")})});export{m as default};

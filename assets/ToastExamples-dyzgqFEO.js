@@ -1,0 +1,1 @@
+import{q as s,z as a,a as o}from"./chunk-UIGDSWPH-CtiJzZl8.js";import{u as e}from"./ToastProvider-DOBgYgXK.js";const c=s(function(){const t=a(),{showToast:n}=e();return o.useEffect(()=>{t("/",{replace:!0})},[t]),null});export{c as default};
