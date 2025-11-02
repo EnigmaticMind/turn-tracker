@@ -37,9 +37,44 @@ jobs:
           # Override with GitHub secret VITE_WS_URL if set, otherwise use default
           VITE_WS_URL: ${{ secrets.VITE_WS_URL || 'wss://turn-tracker-backend.fly.dev/ws' }}
 
+      - name: Verify build output
+        working-directory: frontend
+        run: |
+          if [ ! -d "build/client" ]; then
+            echo "Error: build/client directory not found"
+            exit 1
+          fi
+          echo "Build output verified"
+
       - name: Fix SPA routing for GitHub Pages
         working-directory: frontend
-        run: cp build/client/index.html build/client/404.html
+        run: |
+          # Check if index.html exists, if not create it
+          if [ -f "build/client/index.html" ]; then
+            cp build/client/index.html build/client/404.html
+            echo "Copied index.html to 404.html"
+          else
+            echo "index.html not found, creating minimal HTML file for React Router"
+            # Find the entry.client.js file dynamically from manifest
+            ENTRY_FILE=$(node -e "const manifest = require('./build/client/.vite/manifest.json'); const entry = Object.values(manifest).find(m => m.isEntry && m.file && m.file.includes('entry.client')); console.log(entry ? '/' + entry.file : '/assets/entry.client.js');")
+            # Create a minimal index.html that loads the React Router entry point
+            cat > build/client/index.html << EOF
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+              <title>Turn Tracker</title>
+              <script type="module" src="$ENTRY_FILE"></script>
+            </head>
+            <body>
+              <div id="root"></div>
+            </body>
+          </html>
+          EOF
+            cp build/client/index.html build/client/404.html
+            echo "Created index.html and 404.html with entry: $ENTRY_FILE"
+          fi
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
