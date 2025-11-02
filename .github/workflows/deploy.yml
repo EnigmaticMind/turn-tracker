@@ -34,6 +34,10 @@ jobs:
           # Override with GitHub secret VITE_WS_URL if set, otherwise use default
           VITE_WS_URL: ${{ secrets.VITE_WS_URL || 'wss://turn-tracker-backend.fly.dev/ws' }}
 
+      - name: Fix SPA routing for GitHub Pages
+        working-directory: frontend
+        run: cp build/client/index.html build/client/404.html
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
