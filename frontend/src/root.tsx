@@ -6,13 +6,16 @@ import {
   Scripts,
   ScrollRestoration,
   useNavigation,
+  useLocation,
 } from "react-router";
 import { Suspense } from "react";
+import { motion } from "framer-motion";
 
 import type { Route } from "./+types/root";
 import "./app.css";
 import { ToastProvider } from "./components/ToastProvider";
 import TopLoadingBar from "./components/TopLoadingBar";
+import AnimatedBackground from "./components/AnimatedBackground";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -38,26 +41,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <div className="min-h-screen h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
-          {/* Animated Background Elements */}
-          <div className="absolute inset-0">
-            {/* Floating Particles */}
-            <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-blue-400 rounded-full animate-bounce opacity-60"></div>
-            <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-cyan-400 rounded-full animate-pulse opacity-40"></div>
-            <div className="absolute bottom-1/3 left-1/3 w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce delay-1000 opacity-50"></div>
-            <div className="absolute bottom-1/4 right-1/4 w-2 h-2 bg-purple-400 rounded-full animate-pulse delay-2000 opacity-60"></div>
-
-            {/* Geometric Shapes */}
-            {/* <div className="absolute top-20 left-20 w-8 h-8 border border-blue-400/30 rotate-45 animate-spin"></div> */}
-            <div className="absolute top-40 right-20 w-6 h-6 border border-cyan-400/30 rounded-full animate-pulse"></div>
-            {/* <div className="absolute bottom-20 left-40 w-4 h-4 bg-gradient-to-r from-teal-400 to-purple-400 rounded-full animate-bounce delay-500"></div> */}
-            <div className="absolute bottom-40 left-30 w-5 h-5 border border-purple-400/20 rounded-full animate-pulse delay-1000"></div>
-
-            {/* Gradient Orbs */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute top-1/3 right-1/3 w-64 h-64 bg-gradient-to-r from-cyan-500/10 to-teal-500/10 rounded-full blur-2xl animate-pulse delay-1000"></div>
-            <div className="absolute bottom-1/3 left-1/3 w-80 h-80 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
-          </div>
-
+          <AnimatedBackground />
           <div className="relative z-10 h-full">{children}</div>
         </div>
         <ScrollRestoration />
@@ -68,9 +52,46 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 export function HydrateFallback() {
   return (
-    <div>
-      <TopLoadingBar />
-    </div>
+    <>
+      {/* Loading bar at top */}
+      <div className="fixed top-0 left-0 right-0 h-1 z-50 bg-white/10 overflow-hidden">
+        <motion.div
+          className="h-full bg-sky-400/80 shadow-[0_0_8px_rgba(56,189,248,0.8)]"
+          animate={{
+            x: ["-100%", "100%"],
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+          style={{
+            width: "40%",
+          }}
+        />
+      </div>
+
+      <div className="min-h-screen h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+        <AnimatedBackground />
+        <div className="relative flex inset-0 z-10 h-full items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.2 }}
+            className="text-center space-y-6"
+          >
+            {/* Spinner */}
+            <div className="w-16 h-16 border-4 border-sky-400 border-t-transparent rounded-full animate-spin mx-auto shadow-[0_0_20px_rgba(56,189,248,0.5)]"></div>
+
+            {/* Message */}
+            <p className="text-white text-xl font-semibold tracking-wide">
+              Connecting to remote server...
+            </p>
+          </motion.div>
+        </div>
+      </div>
+    </>
   );
 }
 

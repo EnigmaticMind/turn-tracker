@@ -6,10 +6,18 @@ interface Message {
 }
 
 // Connection Constants
-const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8080/ws";
+// For production (GitHub Pages), use wss://your-app-name.fly.dev/ws
+// For development, use ws://localhost:8080/ws or set VITE_WS_URL
+const WS_URL = import.meta.env.VITE_WS_URL || 
+  (import.meta.env.PROD 
+    ? "wss://turn-tracker-backend.fly.dev/ws"  // Update this to your fly.io app name
+    : "ws://localhost:8080/ws");
 const RECONNECT_DELAY = 2000; // ms
 const MAX_RECONNECT_ATTEMPTS = 5;
 const CONNECTION_CHECK_INTERVAL = 100; // ms - how often to check connection state
+
+// Persistent connections will retry indefinitely
+const PERSISTENT_MODE = true;
 
 // Message Waiting Constants
 const DEFAULT_MESSAGE_TIMEOUT = 10000; // ms - used for all sendAndWait operations
@@ -31,6 +39,19 @@ export class WebSocketConnection {
   private messageCallbacks: Set<MessageCallback> = new Set();
   private isDestroyed = false;
   private connectPromise: Promise<void> | null = null;
+  private clientID?: string;
+  private isPersistent = false;
+
+  setClientID(clientID: string): void {
+    this.clientID = clientID;
+  }
+
+  setPersistent(persistent: boolean): void {
+    this.isPersistent = persistent;
+    if (persistent) {
+      this.reconnectAttempts = 0; // Reset attempts when making persistent
+    }
+  }
 
   // Auto-connects if not already connected
   async connect(): Promise<void> {
@@ -60,7 +81,12 @@ export class WebSocketConnection {
       }
 
       try {
-        this.ws = new WebSocket(WS_URL);
+        // Build URL with clientID query param if available
+        let url = WS_URL;
+        if (this.clientID) {
+          url += `?client_id=${encodeURIComponent(this.clientID)}`;
+        }
+        this.ws = new WebSocket(url);
 
         this.ws.onopen = () => {
           console.log("WebSocket connected");
@@ -180,7 +206,8 @@ export class WebSocketConnection {
   }
 
   private attemptReconnect() {
-    if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+    // If persistent, never give up (unless destroyed)
+    if (!this.isPersistent && this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
       console.error("Max reconnect attempts reached");
       return;
     }
@@ -190,7 +217,10 @@ export class WebSocketConnection {
     }
 
     this.reconnectAttempts++;
-    console.log(`Attempting to reconnect (${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
+    const attemptInfo = this.isPersistent 
+      ? `${this.reconnectAttempts} (persistent)`
+      : `${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`;
+    console.log(`Attempting to reconnect (${attemptInfo})...`);
 
     this.reconnectTimer = setTimeout(() => {
       this.connect().catch((err) => {

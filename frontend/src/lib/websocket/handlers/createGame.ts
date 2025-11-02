@@ -1,7 +1,8 @@
 import WebSocketManager from "../WebSocketManager";
 import { getDefaultProfile } from "../../utils/userProfile";
+import type { Message } from "./types";
 
-export async function createGame(ws: WebSocketManager): Promise<void> {
+export async function createGame(ws: WebSocketManager): Promise<Message> {
   console.log("Creating game (backend will generate ID)");
 
   // Get defaults from localStorage (only if they exist)
@@ -19,7 +20,7 @@ export async function createGame(ws: WebSocketManager): Promise<void> {
   // Uses DEFAULT_MESSAGE_TIMEOUT from WebSocketConnection
   // gameID will be set automatically via setupMessageHandlers when room_created arrives
   // Backend will generate random display_name and color if not provided
-  await ws.connection.sendAndWait(
+  return ws.connection.sendAndWait(
     {
       type: "create_room",
       data,

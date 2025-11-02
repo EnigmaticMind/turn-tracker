@@ -3,6 +3,7 @@ package createroom
 import (
 	"log"
 	"turn-tracker/backend/core"
+	"turn-tracker/backend/helpers"
 	"turn-tracker/backend/types"
 )
 
@@ -13,10 +14,10 @@ func HandleCreateRoom(hub *core.Hub, client *core.Client, roomID, displayName, c
 	core.InitializeClientProfile(client, displayName, color)
 
 	// Generate game ID if not provided or invalid
-	if roomID == "" || !core.IsValidGameID(roomID) {
+	if roomID == "" || !helpers.IsValidGameID(roomID) {
 		// Generate unique game ID (with collision checking)
 		for {
-			roomID = core.GenerateGameID()
+			roomID = helpers.GenerateGameID()
 			if !hub.RoomExists(roomID) {
 				break
 			}
@@ -27,7 +28,7 @@ func HandleCreateRoom(hub *core.Hub, client *core.Client, roomID, displayName, c
 		// Check if room already exists when ID is provided
 		if hub.RoomExists(roomID) {
 			errorMsg, _ := types.NewErrorMessage("Room already exists")
-			client.Send <- errorMsg
+			client.SafeSend(errorMsg)
 			return
 		}
 	}
@@ -35,20 +36,21 @@ func HandleCreateRoom(hub *core.Hub, client *core.Client, roomID, displayName, c
 	// Create room
 	room := core.NewRoom(roomID)
 	room.CreatedBy = client.ClientID
-	room.Clients[client] = true
+	room.Clients[client.ClientID] = client
 	hub.AddRoom(roomID, room)
 
 	// Update client's room ID
 	client.RoomID = roomID
 
-	// Send room_created message with peer info
+	// Send room_created message with peer info and current turn (if any)
 	peers := room.ListPeerInfo()
-	response, err := NewRoomCreatedMessage(roomID, peers)
+	currentTurn := room.GetCurrentTurnInfo()
+	response, err := NewRoomCreatedMessage(roomID, client.ClientID, peers, currentTurn)
 	if err != nil {
 		log.Printf("Error creating room_created message: %v", err)
 		return
 	}
-	client.Send <- response
+	client.SafeSend(response)
 
 	log.Printf("Room created: %s by client %s (%s)", roomID, client.ClientID, client.DisplayName)
 }
