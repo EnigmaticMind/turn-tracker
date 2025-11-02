@@ -5,6 +5,7 @@ import {
 } from "../lib/utils/userProfile";
 import { updateProfile } from "../lib/websocket/handlers/updateProfile";
 import WebSocketManager from "../lib/websocket/WebSocketManager";
+import { toast } from "./ToastProvider";
 
 interface OptionsProps {
   onClose: () => void;
@@ -12,11 +13,12 @@ interface OptionsProps {
 }
 
 export default function Options({ onClose, ws }: OptionsProps) {
-  const [playerName, setPlayerName] = useState<string>("");
-  const [playerColor, setPlayerColor] = useState<string>("#3498db");
+  const [playerName, setPlayerName] = useState<string>(ws?.displayName || "");
+  const [playerColor, setPlayerColor] = useState<string>(ws?.color || "");
 
   // Load defaults from localStorage on mount
   useEffect(() => {
+    console.log("Loading defaults from localStorage");
     const defaults = getDefaultProfile();
     if (defaults.displayName) {
       setPlayerName(defaults.displayName);
@@ -27,8 +29,7 @@ export default function Options({ onClose, ws }: OptionsProps) {
   }, []);
 
   const onSave = async () => {
-    // Save to localStorage
-    saveDefaultProfile(playerName || undefined, playerColor || undefined);
+    console.log("Saving profile", playerName, playerColor);
 
     // Update profile on server (only if ws is provided and in a room)
     if (ws) {
@@ -41,10 +42,18 @@ export default function Options({ onClose, ws }: OptionsProps) {
           );
         }
       } catch (error) {
-        console.error("Failed to update profile:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to update profile";
+        console.error("Options: ", errorMessage);
+        // TODO: Expand back end to return more specific error messages
+        toast.error("Problem updating profile: " + errorMessage);
+        onClose();
+        return;
       }
     }
 
+    // Save to localStorage
+    saveDefaultProfile(playerName || undefined, playerColor || undefined);
     onClose();
   };
 

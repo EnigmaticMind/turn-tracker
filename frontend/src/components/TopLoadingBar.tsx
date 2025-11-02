@@ -1,18 +1,66 @@
 import { useNavigation, useLocation } from "react-router";
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+
+type LoadingState = {
+  isActive: boolean;
+  message?: string;
+};
+
+export function startLoading(message?: string): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent("loading:start", {
+      detail: { message },
+    })
+  );
+}
+
+export function stopLoading(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("loading:stop"));
+}
 
 export default function TopLoadingBar() {
   const navigation = useNavigation();
   const location = useLocation();
+  const [customLoading, setCustomLoading] = useState<LoadingState>({
+    isActive: false,
+  });
+
+  // Listen for custom loading events (from async handlers)
+  useEffect(() => {
+    const handleLoadingStart = (event: Event) => {
+      const customEvent = event as CustomEvent<{ message?: string }>;
+      setCustomLoading({
+        isActive: true,
+        message: customEvent.detail?.message,
+      });
+    };
+
+    const handleLoadingStop = () => {
+      setCustomLoading({ isActive: false });
+    };
+
+    window.addEventListener("loading:start", handleLoadingStart);
+    window.addEventListener("loading:stop", handleLoadingStop);
+
+    return () => {
+      window.removeEventListener("loading:start", handleLoadingStart);
+      window.removeEventListener("loading:stop", handleLoadingStop);
+    };
+  }, []);
 
   // Check if navigation is in loading state
-  const isLoading = navigation.state === "loading";
+  const isNavigationLoading = navigation.state === "loading";
 
   // Also check for pending navigation (location mismatch indicates transition)
   const hasPendingNavigation =
     navigation.location && navigation.location.pathname !== location.pathname;
 
-  const shouldShow = isLoading || hasPendingNavigation;
+  // Show if navigation loading OR custom loading is active
+  const shouldShow =
+    isNavigationLoading || hasPendingNavigation || customLoading.isActive;
 
   // Determine if we're creating or joining a game
   const gameID =
@@ -28,11 +76,14 @@ export default function TopLoadingBar() {
     return null;
   }
 
-  const message = isCreating
-    ? "Creating game..."
-    : gameID
-      ? `Joining game ${gameID}...`
-      : "Loading...";
+  // Determine message - prioritize custom message, then navigation-based
+  const message =
+    customLoading.message ||
+    (isCreating
+      ? "Creating game..."
+      : gameID
+        ? `Joining game ${gameID}...`
+        : "Loading...");
 
   return (
     <>

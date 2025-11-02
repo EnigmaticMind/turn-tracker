@@ -1,8 +1,9 @@
 import WebSocketManager from "../WebSocketManager";
 import { isValidGameID } from "../utils/gameID";
 import { getDefaultProfile } from "../../utils/userProfile";
+import type { Message } from "./types";
 
-export async function joinGame(ws: WebSocketManager, gameID: string): Promise<void> {
+export async function joinGame(ws: WebSocketManager, gameID: string): Promise<Message> {
   console.log("Joining game:", gameID);
 
   if (!isValidGameID(gameID)) {
@@ -26,7 +27,7 @@ export async function joinGame(ws: WebSocketManager, gameID: string): Promise<vo
   // Uses DEFAULT_MESSAGE_TIMEOUT from WebSocketConnection
   // gameID will be set automatically via setupMessageHandlers when room_joined arrives
   // Backend will generate random display_name and color if not provided
-  await ws.connection.sendAndWait(
+  return ws.connection.sendAndWait(
     {
       type: "join_room",
       data,

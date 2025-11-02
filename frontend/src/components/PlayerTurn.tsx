@@ -1,25 +1,64 @@
-import { useNavigate, useParams } from "react-router";
+import { useOutletContext } from "react-router";
 import { LiquidAvatar } from "../components/LiquidAvatar";
-import { players } from "../lib/players";
-import { PlayerGrid } from "../components/PlayerGrid";
+import { PlayerGrid, type Player } from "../components/PlayerGrid";
+import { startTurn } from "../lib/websocket/handlers/startTurn";
+import { endTurn } from "../lib/websocket/handlers/endTurn";
+import WebSocketManager from "../lib/websocket/WebSocketManager";
+import type { PeerInfo } from "../lib/websocket/handlers/types";
+import { toast } from "./ToastProvider";
+
+interface GameOutletContext {
+  ws: WebSocketManager | null;
+  peers: PeerInfo[];
+  currentTurn: PeerInfo | null;
+}
 
 export default function PlayerTurn() {
-  const navigate = useNavigate();
-  const { gameID, playerID } = useParams();
+  const { ws, peers, currentTurn } = useOutletContext<GameOutletContext>();
 
-  const currentPlayer = players.find((p) => String(p.id) === playerID);
+  // Convert PeerInfo[] to Player[] for type compatibility
+  const players: Player[] = peers;
+  const currentPlayer = currentTurn;
 
   const otherPlayers = currentPlayer
-    ? players.filter((p) => p.id !== currentPlayer.id)
+    ? players.filter((p) => p.client_id !== currentPlayer.client_id)
     : players;
 
-  const handleEndCurrentTurn = () => {
-    navigate(`/game/${gameID}`);
+  const handleEndCurrentTurn = async () => {
+    if (!ws) return;
+    // Send end_turn message to backend to clear current turn
+    try {
+      await endTurn(ws);
+      // Navigation will happen automatically when turn_changed message arrives (turn becomes null)
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to end turn";
+      console.error("PlayerTurn: ", error);
+      toast.error(errorMessage);
+    }
   };
 
-  const handleSelect = (id: number) => {
-    navigate(`/game/${gameID}/turn/${id}`);
+  const handleSelect = async (targetClientID: string) => {
+    if (!ws) return;
+    // Send start_turn request to backend
+    try {
+      await startTurn(ws, targetClientID);
+      // Navigation will happen automatically when turn_changed message arrives
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to start turn";
+      console.error("PlayerTurn: ", error);
+      toast.error(errorMessage);
+    }
   };
+
+  if (!ws) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <span className="text-slate-400">Connecting...</span>
+      </div>
+    );
+  }
 
   if (!currentPlayer) {
     return (
@@ -40,7 +79,7 @@ export default function PlayerTurn() {
         <LiquidAvatar
           color={currentPlayer.color}
           active
-          name={currentPlayer.name}
+          name={currentPlayer.display_name}
         />
       </div>
 

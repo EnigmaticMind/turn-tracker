@@ -1,7 +1,6 @@
 package types
 
 import (
-	"bytes"
 	"encoding/json"
 	"sync"
 )
@@ -25,7 +24,6 @@ var (
 		"Room already exists":       nil,
 		"Invalid create_room data":  nil,
 		"Invalid join_room data":    nil,
-		"Invalid broadcast data":    nil,
 		"Not a member of this room": nil,
 	}
 	cacheMutex sync.RWMutex
@@ -36,6 +34,9 @@ var (
 const unknownMsgPrefix = "Unknown message type: "
 
 // NewErrorMessage creates an error message, using cached versions when available
+// Note: Cached errors are already optimized (marshaled once), so we don't need
+// to use the memory pool here. The pool is used for messages that are created
+// frequently and sent via WritePump, which pools them after sending.
 func NewErrorMessage(message string) ([]byte, error) {
 	cacheMutex.RLock()
 	cached, exists := cachedErrors[message]
@@ -80,42 +81,4 @@ func NewUnknownMessageTypeError(msgType string) ([]byte, error) {
 	buf = append(buf, unknownMsgPrefix...)
 	buf = append(buf, msgType...)
 	return NewErrorMessage(string(buf))
-}
-
-// FastParseMessageType extracts just the "type" field from JSON without full unmarshal
-// Returns the type string and whether it was found
-func FastParseMessageType(data []byte) (string, bool) {
-	// Fast path: search for "type" field
-	typeIdx := bytes.Index(data, []byte(`"type"`))
-	if typeIdx == -1 {
-		return "", false
-	}
-
-	// Find the colon after "type"
-	colonIdx := bytes.IndexByte(data[typeIdx:], ':')
-	if colonIdx == -1 {
-		return "", false
-	}
-	colonIdx += typeIdx + 1
-
-	// Skip whitespace
-	for colonIdx < len(data) && (data[colonIdx] == ' ' || data[colonIdx] == '\t' || data[colonIdx] == '\n') {
-		colonIdx++
-	}
-
-	// Check if it's a string value
-	if colonIdx >= len(data) || data[colonIdx] != '"' {
-		return "", false
-	}
-	colonIdx++ // Skip opening quote
-
-	// Find closing quote
-	endIdx := bytes.IndexByte(data[colonIdx:], '"')
-	if endIdx == -1 {
-		return "", false
-	}
-	endIdx += colonIdx
-
-	// Extract the type string
-	return string(data[colonIdx:endIdx]), true
 }

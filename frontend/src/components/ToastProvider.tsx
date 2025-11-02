@@ -1,10 +1,17 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+} from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const MAX_TOASTS = 3;
 const TOAST_DURATION = 3500;
 
 type ToastType = "success" | "error" | "info";
+
 interface Toast {
   id: number;
   message: string;
@@ -16,6 +23,22 @@ interface ToastContextValue {
 }
 
 const ToastContext = createContext<ToastContextValue>({ showToast: () => {} });
+
+export function dispatchToast(message: string, type: ToastType = "info"): void {
+  if (typeof window === "undefined") return;
+
+  window.dispatchEvent(
+    new CustomEvent("toast", {
+      detail: { type, message },
+    })
+  );
+}
+
+export const toast = {
+  success: (message: string) => dispatchToast(message, "success"),
+  error: (message: string) => dispatchToast(message, "error"),
+  info: (message: string) => dispatchToast(message, "info"),
+};
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -34,6 +57,27 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
       TOAST_DURATION
     );
   }, []);
+
+  // Listen for custom toast events (from loaders, WebSocket errors, etc.)
+  useEffect(() => {
+    const handleToastEvent = (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        type: ToastType;
+        message: string;
+      }>;
+      if (customEvent.detail?.message) {
+        showToast(
+          customEvent.detail.message,
+          customEvent.detail.type || "info"
+        );
+      }
+    };
+
+    window.addEventListener("toast", handleToastEvent);
+    return () => {
+      window.removeEventListener("toast", handleToastEvent);
+    };
+  }, [showToast]);
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
@@ -55,25 +99,12 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
                 text-sm text-white px-4 py-3 w-full text-center
                 ${
                   toast.type === "success"
-                    ? "border-emerald-500/40 bg-emerald-600/20"
+                    ? "border-emerald-800 bg-emerald-800"
                     : toast.type === "error"
-                      ? "border-red-500/40 bg-red-600/20"
-                      : "border-sky-500/40 bg-sky-600/20"
+                      ? "border-red-800 bg-red-800"
+                      : "border-sky-800 bg-sky-800"
                 }`}
             >
-              {/* === 🔮 Optional Styling Enhancements === */}
-              {/* Glowing background animation */}
-              <div
-                className={`absolute inset-0 blur-lg opacity-40 animate-pulse
-                ${
-                  toast.type === "success"
-                    ? "bg-gradient-to-r from-emerald-400 to-emerald-700"
-                    : toast.type === "error"
-                      ? "bg-gradient-to-r from-red-400 to-red-700"
-                      : "bg-gradient-to-r from-sky-400 to-indigo-700"
-                }`}
-              ></div>
-
               {/* Animated liquid shimmer */}
               <div className="absolute inset-0 opacity-25 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.2),transparent_70%)] animate-[pulse_3s_ease-in-out_infinite]"></div>
 

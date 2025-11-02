@@ -7,10 +7,18 @@ import (
 )
 
 // NewRoomCreatedMessage creates a room_created message
-func NewRoomCreatedMessage(roomID string, peers []core.PeerInfo) ([]byte, error) {
+func NewRoomCreatedMessage(roomID, yourClientID string, peers []core.PeerInfo, currentTurn core.PeerInfo) ([]byte, error) {
+	var currentTurnPtr *core.PeerInfo
+	// If currentTurn is not empty (has a ClientID), use it; otherwise set to nil for null in JSON
+	if currentTurn.ClientID != "" {
+		currentTurnPtr = &currentTurn
+	}
+
 	data := RoomCreatedData{
-		RoomID: roomID,
-		Peers:  peers,
+		RoomID:       roomID,
+		YourClientID: yourClientID,
+		Peers:        peers,
+		CurrentTurn:  currentTurnPtr,
 	}
 	dataJSON, err := json.Marshal(data)
 	if err != nil {
@@ -20,5 +28,11 @@ func NewRoomCreatedMessage(roomID string, peers []core.PeerInfo) ([]byte, error)
 		Type: "room_created",
 		Data: dataJSON,
 	}
-	return json.Marshal(msg)
+	// Marshal message - json.Marshal allocates its own buffer
+	marshaled, err := json.Marshal(msg)
+	if err != nil {
+		return nil, err
+	}
+	// Copy into pooled buffer for reuse
+	return core.CopyToPooledBuffer(marshaled), nil
 }

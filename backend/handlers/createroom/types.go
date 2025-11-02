@@ -12,6 +12,8 @@ type CreateRoomData struct {
 
 // RoomCreatedData is the response data structure for room_created messages
 type RoomCreatedData struct {
-	RoomID string          `json:"room_id"`
-	Peers  []core.PeerInfo `json:"peers"`
+	RoomID      string          `json:"room_id"`
+	YourClientID string         `json:"your_client_id"` // Client ID of the message recipient
+	Peers       []core.PeerInfo `json:"peers"`
+	CurrentTurn *core.PeerInfo  `json:"current_turn,omitempty"` // nil if no turn active
 }
