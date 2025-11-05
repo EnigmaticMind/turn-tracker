@@ -42,11 +42,20 @@ export async function clientLoader() {
   return {};
 }
 
+// Type for install prompt event
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
 export default function Home() {
   const [gameID, setGameID] = useState("");
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const gameIDFromParams = searchParams.get("code");
+  const [installPrompt, setInstallPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
     if (gameIDFromParams) {
@@ -58,6 +67,32 @@ export default function Home() {
       setGameID(normalized);
     }
   }, [gameIDFromParams]);
+
+  // Check if app is already installed and listen for install prompt
+  useEffect(() => {
+    // Check if app is already installed (standalone mode)
+    if (
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as any).standalone === true
+    ) {
+      setIsInstalled(true);
+    }
+
+    // Listen for install prompt (Chrome/Edge)
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e as BeforeInstallPromptEvent);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt
+      );
+    };
+  }, []);
 
   const handleGameIDChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -72,6 +107,46 @@ export default function Home() {
     if (!isValidGameID(gameID)) {
       e.preventDefault();
       return false;
+    }
+  };
+
+  const handleInstallClick = async () => {
+    if (!installPrompt) {
+      // Fallback: show instructions for manual installation
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isAndroid = /Android/.test(navigator.userAgent);
+
+      if (isIOS) {
+        alert(
+          "To install on iOS:\n\n" +
+            "1. Tap the Share button (square with arrow)\n" +
+            '2. Scroll down and tap "Add to Home Screen"\n' +
+            '3. Tap "Add"'
+        );
+      } else if (isAndroid) {
+        alert(
+          "To install on Android:\n\n" +
+            "1. Tap the Menu (⋮) in your browser\n" +
+            '2. Tap "Add to Home screen" or "Install app"\n' +
+            '3. Tap "Add" or "Install"'
+        );
+      } else {
+        alert(
+          "To install this app:\n\n" +
+            "Look for the install button in your browser's address bar,\n" +
+            'or use your browser\'s menu to find "Install" or "Add to Home Screen"'
+        );
+      }
+      return;
+    }
+
+    // Show the install prompt
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+
+    if (outcome === "accepted") {
+      setInstallPrompt(null);
+      setIsInstalled(true);
     }
   };
 
@@ -145,6 +220,22 @@ export default function Home() {
             </button>
           </NavLink>
         </div>
+
+        {/* Install PWA - Only show if not already installed */}
+        {!isInstalled && (
+          <div className="space-y-6">
+            <button
+              onClick={handleInstallClick}
+              className="relative border border-slate-800/50 bg-linear-to-r from-slate-600/30 to-slate-700/30 text-white px-6 py-3 rounded-lg font-semibold hover:from-slate-600/50 hover:to-slate-700/50 transition-all"
+            >
+              <div className="relative flex items-center space-x-2">
+                <span>
+                  {installPrompt ? "Install App" : "Add to Home Screen"}
+                </span>
+              </div>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

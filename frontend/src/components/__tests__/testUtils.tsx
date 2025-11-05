@@ -11,7 +11,7 @@ export const mockUseOutletContext = vi.fn();
 
 // Helper to create mock WebSocketManager
 export function createMockWebSocketManager(overrides?: Partial<any>) {
-  const mockManager = {
+  const mockManager: any = {
     gameID: "TEST123",
     connection: {
       send: vi.fn().mockResolvedValue(undefined),
