@@ -33,8 +33,15 @@ export const links: Route.LinksFunction = () => [
   },
   // PWA manifest and icons
   { rel: "manifest", href: `${basePath}manifest.json` },
+  { rel: "icon", href: `${basePath}icon.svg`, type: "image/svg+xml" },
   { rel: "apple-touch-icon", href: `${basePath}icon-192.png` },
   { rel: "icon", type: "image/png", href: `${basePath}icon-192.png` },
+  {
+    rel: "icon",
+    href: `${basePath}icon-512.png`,
+    type: "image/png",
+    sizes: "512x512",
+  },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
