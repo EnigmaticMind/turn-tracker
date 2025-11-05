@@ -167,3 +167,7 @@ cd frontend
 npm install
 npm run dev
 ```
+
+## License
+
+Private project - All rights reserved
