@@ -71,26 +71,39 @@ export default function Home() {
   // Check if app is already installed and listen for install prompt
   useEffect(() => {
     // Check if app is already installed (standalone mode)
-    if (
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as any).standalone === true
-    ) {
+    const checkIfInstalled = () => {
+      return (
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as any).standalone === true ||
+        document.referrer.includes("android-app://")
+      );
+    };
+
+    if (checkIfInstalled()) {
       setIsInstalled(true);
     }
 
-    // Listen for install prompt (Chrome/Edge)
+    // Listen for install prompt (Chrome/Edge/Opera)
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setInstallPrompt(e as BeforeInstallPromptEvent);
     };
 
+    // Listen for successful installation
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setInstallPrompt(null);
+    };
+
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
 
     return () => {
       window.removeEventListener(
         "beforeinstallprompt",
         handleBeforeInstallPrompt
       );
+      window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, []);
 
@@ -140,13 +153,39 @@ export default function Home() {
       return;
     }
 
-    // Show the install prompt
-    installPrompt.prompt();
-    const { outcome } = await installPrompt.userChoice;
+    try {
+      // Show the install prompt
+      await installPrompt.prompt();
+      const { outcome } = await installPrompt.userChoice;
 
-    if (outcome === "accepted") {
-      setInstallPrompt(null);
-      setIsInstalled(true);
+      if (outcome === "accepted") {
+        setInstallPrompt(null);
+        setIsInstalled(true);
+      } else {
+        // User dismissed the prompt, keep the button available
+        // The installPrompt will remain available for future attempts
+      }
+    } catch (error) {
+      console.error("Error showing install prompt:", error);
+      // If prompt fails, show manual instructions
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isAndroid = /Android/.test(navigator.userAgent);
+
+      if (isIOS) {
+        alert(
+          "To install on iOS:\n\n" +
+            "1. Tap the Share button (square with arrow)\n" +
+            '2. Scroll down and tap "Add to Home Screen"\n' +
+            '3. Tap "Add"'
+        );
+      } else if (isAndroid) {
+        alert(
+          "To install on Android:\n\n" +
+            "1. Tap the Menu (⋮) in your browser\n" +
+            '2. Tap "Add to Home screen" or "Install app"\n' +
+            '3. Tap "Add" or "Install"'
+        );
+      }
     }
   };
 
