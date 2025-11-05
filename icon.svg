@@ -1,0 +1,39 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#06b6d4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="arrowGrad512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e0e7ff;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background with rounded corners -->
+  <rect width="512" height="512" rx="102.4" fill="url(#bgGrad512)"/>
+  
+  <!-- Outer ring -->
+  <circle cx="256" cy="256" r="220.16" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="8.448"/>
+  
+  <!-- Circular arrow representing turn rotation -->
+  <g transform="translate(256, 256)">
+    <!-- Circular arrow arc -->
+    <path d="M 0,-220.16 A 220.16,220.16 0 1,1 0,220.16" 
+          fill="none" 
+          stroke="url(#arrowGrad512)" 
+          stroke-width="28.16" 
+          stroke-linecap="round"
+          stroke-dasharray="1383.3060772286576 1383.3060772286576"
+          stroke-dashoffset="345.8265193071644"/>
+    
+    <!-- Arrow head -->
+    <polygon points="-20.48,-220.16 0,-199.68 20.48,-220.16 0,-240.64" 
+             fill="url(#arrowGrad512)"/>
+    
+    <!-- Center circle -->
+    <circle cx="0" cy="0" r="61.44" fill="rgba(255,255,255,0.15)"/>
+    <circle cx="0" cy="0" r="51.2" fill="rgba(255,255,255,0.25)"/>
+  </g>
+</svg>
