@@ -17,6 +17,9 @@ import { ToastProvider } from "./components/ToastProvider";
 import TopLoadingBar from "./components/TopLoadingBar";
 import AnimatedBackground from "./components/AnimatedBackground";
 
+// Get base path from Vite's BASE_URL (automatically set based on vite.config.ts)
+const basePath = import.meta.env.BASE_URL || "/";
+
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
@@ -29,9 +32,9 @@ export const links: Route.LinksFunction = () => [
     href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
   },
   // PWA manifest and icons
-  { rel: "manifest", href: "/manifest.json" },
-  { rel: "apple-touch-icon", href: "/icon-192.png" },
-  { rel: "icon", type: "image/png", href: "/icon-192.png" },
+  { rel: "manifest", href: `${basePath}manifest.json` },
+  { rel: "apple-touch-icon", href: `${basePath}icon-192.png` },
+  { rel: "icon", type: "image/png", href: `${basePath}icon-192.png` },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -43,7 +46,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* PWA meta tags */}
         <meta name="theme-color" content="#0ea5e9" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
         <meta name="apple-mobile-web-app-title" content="Turn Tracker" />
         <Meta />
         <Links />
