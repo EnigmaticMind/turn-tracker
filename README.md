@@ -4,6 +4,23 @@ A real-time WebSocket application for managing game turns, built with Go and Rea
 
 [Live Version](https://enigmaticmind.github.io/turn-tracker)
 
+![Demo](demo.gif)
+
+---
+
+## Running the Project
+
+```bash
+# Backend
+cd backend
+go run .
+
+# Frontend
+cd frontend
+npm install
+npm run dev
+```
+
 ---
 
 ## Backend (Go) - Advanced Concurrency & Performance
@@ -154,19 +171,6 @@ Uses `useMemo` to create stable context values. Prevents unnecessary re-renders 
 - **Race-condition free** with atomic operations and optimistic concurrency
 
 ---
-
-## Running the Project
-
-```bash
-# Backend
-cd backend
-go run .
-
-# Frontend
-cd frontend
-npm install
-npm run dev
-```
 
 ## License
 
