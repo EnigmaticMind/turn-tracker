@@ -3,7 +3,7 @@
 1. Provide a very broad, high level project overview.
 2. Recieve something top of mind from each person.
     * This capitalizes on time prioritization and makes sure I can engage with everyone.
-    * If approrpiate I'll follow up with an email to Nic if I can't address it in the meeting.
+    * If I can't answer the question during the meeting, I'll follow up with Nic via email.
 3. Move into reviewing things *I* found important or got wrapped up into.
 
 ## Purpose
